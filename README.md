@@ -2,7 +2,7 @@
 
 An immersive 3D landing page where users **fly through a surreal, dreamlike Dubai** instead of scrolling through dashboards. Built with **Three.js + WebGL**, the entire experience is one continuous scroll-driven camera flight across dunes, floating tokenized villas, and a living skyline — emotion first, product second.
 
-**[▶ Live Demo](#)** <!-- add your GitHub Pages / Vercel link here -->
+**[▶ Live Demo](https://ahmadncheema.github.io/Miraj/index.html)**
 
 ![MIRAJ preview](preview.png) <!-- add a screenshot or GIF named preview.png -->
 
@@ -49,9 +49,9 @@ Scrolling doesn't move a page — it moves a **camera** through six cinematic ch
 ## 🚀 Run It
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/miraj-3d-real-estate-world.git
-cd miraj-3d-real-estate-world
-# open index.html in any modern browser — that's it
+git clone https://github.com/ahmadncheema/Miraj.git
+cd Miraj
+# open miraj-real-estate-world.html in any modern browser — that's it
 ```
 
 Or serve locally:
@@ -60,11 +60,11 @@ Or serve locally:
 npx serve .
 ```
 
-Deploy free on **GitHub Pages** or **Vercel** — it's a static single file.
+**Enable GitHub Pages:** repo → Settings → Pages → Source: `main` branch, root. Tip: rename the file to `index.html` and the demo link becomes the clean `https://ahmadncheema.github.io/Miraj/`.
 
 ## ⚙️ Customize
 
-All the magic lives in clearly-labeled blocks inside `index.html`:
+All the magic lives in clearly-labeled blocks inside `miraj-real-estate-world.html`:
 
 - **`KEYS` array** — edit camera positions/look-ats to redesign the flight path
 - **`data-range="start,end"`** on each `.chapter` — controls when text appears along the scroll
