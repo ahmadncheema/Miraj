@@ -2,7 +2,7 @@
 
 An immersive 3D landing page where users **fly through a surreal, dreamlike Dubai** instead of scrolling through dashboards. Built with **Three.js + WebGL**, the entire experience is one continuous scroll-driven camera flight across dunes, floating tokenized villas, and a living skyline — emotion first, product second.
 
-**[▶ Live Demo](https://ahmadncheema.github.io/Miraj/index.html)**
+**[▶ Live Demo](https://ahmadncheema.github.io/Miraj/)**
 
 ![MIRAJ preview](preview.png) <!-- add a screenshot or GIF named preview.png -->
 
