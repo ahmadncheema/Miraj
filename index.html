@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIRAJ — A City Dreamed in Gold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Sora:wght@200;300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#120a2a;
+    --rose:#ff8e6e;
+    --sand:#d9a45f;
+    --gold:#ecc784;
+    --teal:#5fe3c8;
+    --haze:#8a6cd9;
+    --paper:#f6ecdd;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:auto;}
+  body{
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Sora',sans-serif;
+    font-weight:300;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--rose);color:var(--ink);}
+
+  /* ---------- scroll runway ---------- */
+  #runway{height:700vh;position:relative;z-index:1;pointer-events:none;}
+
+  /* ---------- 3D canvas ---------- */
+  #world{
+    position:fixed;inset:0;z-index:0;
+    width:100vw;height:100vh;display:block;
+  }
+
+  /* ---------- grain + vignette ---------- */
+  #veil{
+    position:fixed;inset:0;z-index:2;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 60%, transparent 55%, rgba(10,4,26,.55) 100%);
+  }
+  #veil::after{
+    content:"";position:absolute;inset:0;opacity:.07;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  }
+
+  /* ---------- fixed chrome ---------- */
+  header{
+    position:fixed;top:0;left:0;right:0;z-index:10;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:28px clamp(22px,4vw,56px);
+    mix-blend-mode:screen;
+  }
+  .brand{
+    font-family:'Marcellus',serif;
+    font-size:22px;letter-spacing:.42em;color:var(--gold);
+  }
+  .brand i{font-style:normal;color:var(--rose);}
+  nav{display:flex;gap:34px;font-size:11px;letter-spacing:.28em;text-transform:uppercase;}
+  nav a{color:var(--paper);opacity:.65;text-decoration:none;transition:opacity .3s, color .3s;}
+  nav a:hover, nav a:focus-visible{opacity:1;color:var(--teal);outline:none;}
+  nav a:focus-visible{text-decoration:underline;text-underline-offset:6px;}
+
+  #compass{
+    position:fixed;right:clamp(18px,3vw,44px);top:50%;transform:translateY(-50%);
+    z-index:10;display:flex;flex-direction:column;gap:18px;align-items:center;
+  }
+  #compass .dot{
+    width:7px;height:7px;border-radius:50%;
+    border:1px solid rgba(246,236,221,.5);
+    transition:all .45s ease;cursor:pointer;background:transparent;padding:0;
+  }
+  #compass .dot.on{background:var(--gold);border-color:var(--gold);box-shadow:0 0 14px var(--gold);transform:scale(1.35);}
+
+  #hint{
+    position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+    z-index:10;font-size:10px;letter-spacing:.5em;text-transform:uppercase;
+    color:var(--paper);opacity:.6;display:flex;flex-direction:column;align-items:center;gap:12px;
+    transition:opacity .6s;
+  }
+  #hint .line{width:1px;height:42px;background:linear-gradient(var(--gold),transparent);animation:fall 2.2s ease-in-out infinite;}
+  @keyframes fall{0%{transform:scaleY(0);transform-origin:top}55%{transform:scaleY(1);transform-origin:top}56%{transform-origin:bottom}100%{transform:scaleY(0);transform-origin:bottom}}
+
+  /* ---------- chapters (overlays) ---------- */
+  .chapter{
+    position:fixed;inset:0;z-index:5;
+    display:flex;flex-direction:column;justify-content:center;
+    padding:0 clamp(22px,6vw,110px);
+    opacity:0;visibility:hidden;pointer-events:none;
+    transition:opacity .25s linear;
+  }
+  .chapter.live{visibility:visible;}
+  .chapter .inner{max-width:980px;pointer-events:auto;}
+  .chapter.right{align-items:flex-end;text-align:right;}
+  .chapter.center{align-items:center;text-align:center;}
+
+  .eyebrow{
+    font-size:11px;letter-spacing:.55em;text-transform:uppercase;
+    color:var(--teal);margin-bottom:26px;display:flex;align-items:center;gap:16px;
+  }
+  .chapter.right .eyebrow{justify-content:flex-end;}
+  .chapter.center .eyebrow{justify-content:center;}
+  .eyebrow::before{content:"";width:44px;height:1px;background:var(--teal);opacity:.7;}
+  .chapter.right .eyebrow::before{order:2;}
+
+  h1,h2{
+    font-family:'Marcellus',serif;font-weight:400;
+    line-height:.96;letter-spacing:.01em;color:var(--paper);
+    text-wrap:balance;
+  }
+  h1{font-size:clamp(58px,11.5vw,170px);}
+  h2{font-size:clamp(44px,8vw,118px);}
+  .glow{color:var(--gold);text-shadow:0 0 60px rgba(236,199,132,.45);}
+  .rose{color:var(--rose);text-shadow:0 0 60px rgba(255,142,110,.4);}
+  .teal{color:var(--teal);text-shadow:0 0 60px rgba(95,227,200,.4);}
+
+  .lede{
+    margin-top:30px;max-width:480px;
+    font-size:clamp(14px,1.25vw,17px);line-height:1.85;
+    color:rgba(246,236,221,.78);
+  }
+  .chapter.right .lede{margin-left:auto;}
+  .chapter.center .lede{margin-inline:auto;}
+
+  .stat-row{display:flex;gap:clamp(28px,4vw,70px);margin-top:44px;flex-wrap:wrap;}
+  .chapter.right .stat-row{justify-content:flex-end;}
+  .stat b{display:block;font-family:'Marcellus',serif;font-weight:400;font-size:clamp(26px,3vw,42px);color:var(--gold);}
+  .stat span{font-size:10px;letter-spacing:.3em;text-transform:uppercase;opacity:.6;}
+
+  .cta{
+    display:inline-flex;align-items:center;gap:14px;
+    margin-top:48px;padding:20px 44px;
+    font-family:'Sora',sans-serif;font-size:12px;letter-spacing:.4em;text-transform:uppercase;
+    color:var(--ink);background:linear-gradient(120deg,var(--gold),var(--rose));
+    border:none;border-radius:999px;cursor:pointer;
+    box-shadow:0 0 50px rgba(255,142,110,.35);
+    transition:transform .35s ease, box-shadow .35s ease;
+  }
+  .cta:hover,.cta:focus-visible{transform:translateY(-3px) scale(1.02);box-shadow:0 0 90px rgba(255,142,110,.6);outline:none;}
+  .cta.ghost{
+    background:transparent;color:var(--paper);
+    border:1px solid rgba(246,236,221,.35);box-shadow:none;
+  }
+  .cta.ghost:hover{border-color:var(--teal);color:var(--teal);box-shadow:0 0 40px rgba(95,227,200,.25);}
+
+  /* ---------- loader ---------- */
+  #gate{
+    position:fixed;inset:0;z-index:50;background:var(--ink);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;
+    transition:opacity 1.1s ease, visibility 1.1s;
+  }
+  #gate.open{opacity:0;visibility:hidden;}
+  #gate .sigil{
+    font-family:'Marcellus',serif;font-size:clamp(34px,6vw,64px);
+    letter-spacing:.5em;color:var(--gold);padding-left:.5em;
+    animation:breathe 2.6s ease-in-out infinite;
+  }
+  @keyframes breathe{0%,100%{opacity:.45;text-shadow:0 0 20px rgba(236,199,132,.2)}50%{opacity:1;text-shadow:0 0 70px rgba(236,199,132,.6)}}
+  #gate .sub{font-size:10px;letter-spacing:.6em;text-transform:uppercase;opacity:.5;padding-left:.6em;}
+
+  @media (max-width:720px){
+    nav{display:none;}
+    #compass{right:14px;gap:14px;}
+    .lede{max-width:100%;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #hint .line,#gate .sigil{animation:none;}
+  }
+</style>
+</head>
+<body>
+
+<canvas id="world" aria-hidden="true"></canvas>
+<div id="veil" aria-hidden="true"></div>
+
+<header>
+  <div class="brand">MIR<i>A</i>J</div>
+  <nav aria-label="Journey">
+    <a href="#" data-jump="0">Origin</a>
+    <a href="#" data-jump="1">The Sands</a>
+    <a href="#" data-jump="2">The Ascent</a>
+    <a href="#" data-jump="3">The Skyline</a>
+    <a href="#" data-jump="4">The Spire</a>
+    <a href="#" data-jump="5">Arrive</a>
+  </nav>
+</header>
+
+<div id="compass" aria-hidden="true"></div>
+
+<div id="hint">
+  <span>Scroll to travel</span>
+  <div class="line"></div>
+</div>
+
+<!-- ============ CHAPTERS ============ -->
+<section class="chapter center" data-range="0,0.10" id="ch-hero">
+  <div class="inner">
+    <div class="eyebrow">A real-estate world, not a website</div>
+    <h1>Own a piece<br>of the <span class="rose">mirage</span></h1>
+    <p class="lede">Miraj turns Dubai property into a landscape you travel through — towers, dunes and tokenized deeds rendered as one living dream. Keep scrolling. The city will come to you.</p>
+  </div>
+</section>
+
+<section class="chapter" data-range="0.13,0.30" id="ch-sands">
+  <div class="inner">
+    <div class="eyebrow">Chapter I — The Sands</div>
+    <h2>Every empire<br>begins as <span class="glow">sand</span></h2>
+    <p class="lede">Fifty years ago this horizon held nothing but heat and ambition. Miraj starts the journey where the city did — at ground level, in the dunes, where value was only an idea drifting on the wind.</p>
+  </div>
+</section>
+
+<section class="chapter right" data-range="0.32,0.50" id="ch-ascent">
+  <div class="inner">
+    <div class="eyebrow">Chapter II — The Ascent</div>
+    <h2>Deeds that <span class="teal">float</span><br>above the ordinary</h2>
+    <p class="lede">Each floating island is a property, split into on-chain fractions. Buy a sliver of a marina penthouse or a whole desert villa — settlement in minutes, yield streamed to your wallet, ownership recorded in light.</p>
+    <div class="stat-row">
+      <div class="stat"><b>1/1000th</b><span>Minimum fraction</span></div>
+      <div class="stat"><b>~4 min</b><span>Title settlement</span></div>
+      <div class="stat"><b>24/7</b><span>Open market</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="chapter" data-range="0.52,0.68" id="ch-skyline">
+  <div class="inner">
+    <div class="eyebrow">Chapter III — The Skyline</div>
+    <h2>Towers with<br>a <span class="rose">heartbeat</span></h2>
+    <p class="lede">Every lit window is a unit trading live on Miraj. Rents, occupancy and yield pulse through the glass in real time — the skyline itself is the dashboard you'll never have to read.</p>
+    <div class="stat-row">
+      <div class="stat"><b>2,840</b><span>Listed units</span></div>
+      <div class="stat"><b>8.2%</b><span>Avg. net yield</span></div>
+      <div class="stat"><b>AED 1.4B</b><span>Value on-world</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="chapter right" data-range="0.70,0.85" id="ch-spire">
+  <div class="inner">
+    <div class="eyebrow">Chapter IV — The Spire</div>
+    <h2>Claim your<br><span class="glow">coordinates</span><br>in the dream</h2>
+    <p class="lede">At the summit, the moon keeps the ledger. Reserve a residence, a fraction, or a single golden window — and the world remembers it is yours every time you return.</p>
+  </div>
+</section>
+
+<section class="chapter center" data-range="0.88,1" id="ch-arrive">
+  <div class="inner">
+    <div class="eyebrow">You have arrived</div>
+    <h1><span class="glow">Enter</span> Miraj</h1>
+    <p class="lede">The waitlist opens the gates to the first district — 12 towers, 3 islands, one desert. Emotion first. Paperwork never.</p>
+    <div>
+      <button class="cta">Join the first caravan</button>
+      <button class="cta ghost">Replay the journey</button>
+    </div>
+  </div>
+</section>
+
+<div id="runway"></div>
+
+<div id="gate">
+  <div class="sigil">MIRAJ</div>
+  <div class="sub">Summoning the city</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function(){
+"use strict";
+const REDUCED = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= RENDERER / SCENE ================= */
+const canvas = document.getElementById('world');
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:false});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x1b0f38, 0.0075);
+
+const camera = new THREE.PerspectiveCamera(58, innerWidth/innerHeight, 0.1, 600);
+camera.position.set(0, 20, 95);
+
+/* ================= SKY (gradient dome) ================= */
+const skyMat = new THREE.ShaderMaterial({
+  side: THREE.BackSide, depthWrite:false,
+  uniforms:{
+    top:{value:new THREE.Color(0x0d0626)},
+    mid:{value:new THREE.Color(0x4a2470)},
+    bot:{value:new THREE.Color(0xff7e5f)}
+  },
+  vertexShader:`varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
+  fragmentShader:`
+    varying vec3 vP;
+    uniform vec3 top; uniform vec3 mid; uniform vec3 bot;
+    void main(){
+      float h = normalize(vP).y;
+      vec3 c = h > 0.12
+        ? mix(mid, top, smoothstep(0.12, 0.75, h))
+        : mix(bot, mid, smoothstep(-0.12, 0.12, h));
+      gl_FragColor = vec4(c, 1.0);
+    }`
+});
+scene.add(new THREE.Mesh(new THREE.SphereGeometry(420, 24, 18), skyMat));
+
+/* ================= LIGHTS ================= */
+scene.add(new THREE.AmbientLight(0x5a3f8f, 0.85));
+const moonLight = new THREE.DirectionalLight(0xffc9a0, 1.15);
+moonLight.position.set(20, 70, -120);
+scene.add(moonLight);
+const tealFill = new THREE.DirectionalLight(0x3fd8c4, 0.35);
+tealFill.position.set(-60, 30, 60);
+scene.add(tealFill);
+
+/* ================= MOON ================= */
+const moon = new THREE.Group();
+const moonCore = new THREE.Mesh(
+  new THREE.SphereGeometry(24, 40, 40),
+  new THREE.MeshBasicMaterial({color:0xffb38a})
+);
+moon.add(moonCore);
+for(let i=1;i<=3;i++){
+  const halo = new THREE.Mesh(
+    new THREE.SphereGeometry(24 + i*4.5, 32, 32),
+    new THREE.MeshBasicMaterial({color:0xff8e6e, transparent:true, opacity:0.10/i, depthWrite:false})
+  );
+  moon.add(halo);
+}
+moon.position.set(6, 52, -200);
+scene.add(moon);
+
+/* ================= STARS ================= */
+{
+  const n = 900, pos = new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    const r = 280 + Math.random()*120;
+    const th = Math.random()*Math.PI*2;
+    const ph = Math.acos(2*Math.random()-1) * 0.55; // bias upward
+    pos[i*3]   = r*Math.sin(ph)*Math.cos(th);
+    pos[i*3+1] = Math.abs(r*Math.cos(ph)) + 10;
+    pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(g, new THREE.PointsMaterial({
+    color:0xfff2d8, size:0.9, sizeAttenuation:true, transparent:true, opacity:0.85
+  })));
+}
+
+/* ================= DESERT DUNES ================= */
+function duneHeight(x,z){
+  return Math.sin(x*0.045)*Math.cos(z*0.05)*3.4
+       + Math.sin(x*0.012 + z*0.02)*5.5
+       + Math.sin(z*0.09)*1.1;
+}
+{
+  const g = new THREE.PlaneGeometry(560, 560, 110, 110);
+  g.rotateX(-Math.PI/2);
+  const p = g.attributes.position;
+  const colors = new Float32Array(p.count*3);
+  const cLow = new THREE.Color(0x6a3d6e), cHigh = new THREE.Color(0xe0a368);
+  for(let i=0;i<p.count;i++){
+    const x = p.getX(i), z = p.getZ(i);
+    const h = duneHeight(x,z);
+    p.setY(i, h);
+    const t = THREE.MathUtils.clamp((h+6)/14, 0, 1);
+    const c = cLow.clone().lerp(cHigh, t);
+    colors[i*3]=c.r; colors[i*3+1]=c.g; colors[i*3+2]=c.b;
+  }
+  g.setAttribute('color', new THREE.BufferAttribute(colors,3));
+  g.computeVertexNormals();
+  const dunes = new THREE.Mesh(g, new THREE.MeshLambertMaterial({vertexColors:true}));
+  dunes.position.y = -2;
+  scene.add(dunes);
+}
+
+/* ================= CITY ================= */
+const city = new THREE.Group();
+scene.add(city);
+
+function windowTexture(w, h, lit){
+  const c = document.createElement('canvas');
+  c.width = 64; c.height = 128;
+  const x = c.getContext('2d');
+  x.fillStyle = '#1a1038'; x.fillRect(0,0,64,128);
+  for(let i=0;i<8;i++) for(let j=0;j<20;j++){
+    if(Math.random() < lit){
+      x.fillStyle = Math.random()<0.78 ? '#ffd9a0' : '#7df0dc';
+      x.globalAlpha = 0.5 + Math.random()*0.5;
+      x.fillRect(4 + i*7.4, 4 + j*6.1, 4.2, 3.4);
+    }
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.repeat.set(w, h);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
+function tower(x, z, w, h, hue){
+  const grp = new THREE.Group();
+  const tex = windowTexture(Math.max(1, w/3), Math.max(1, h/9), 0.36 + Math.random()*0.25);
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, w),
+    new THREE.MeshLambertMaterial({color:hue, emissive:0xffc488, emissiveMap:tex, emissiveIntensity:0.95})
+  );
+  body.position.y = h/2;
+  grp.add(body);
+  // crown
+  const crown = new THREE.Mesh(
+    new THREE.BoxGeometry(w*0.55, h*0.16, w*0.55),
+    new THREE.MeshLambertMaterial({color:hue, emissive:0x5fe3c8, emissiveIntensity:0.35})
+  );
+  crown.position.y = h + h*0.08;
+  grp.add(crown);
+  // beacon
+  const beacon = new THREE.Mesh(
+    new THREE.SphereGeometry(0.45, 8, 8),
+    new THREE.MeshBasicMaterial({color:0xff8e6e})
+  );
+  beacon.position.y = h + h*0.16 + 0.8;
+  beacon.userData.beacon = true;
+  grp.add(beacon);
+  grp.position.set(x, duneHeight(x,z)-2, z);
+  city.add(grp);
+  return grp;
+}
+
+const palette = [0x2a1c52, 0x33245f, 0x3c2a6b, 0x241646];
+const towerSpots = [];
+(function placeTowers(){
+  let tries = 0;
+  while(towerSpots.length < 26 && tries < 400){
+    tries++;
+    const x = (Math.random()*2-1)*58;
+    const z = -34 - Math.random()*70;
+    if(Math.abs(x) < 9 && z < -60) continue;            // keep spire clear
+    if(towerSpots.some(s => Math.hypot(s.x-x, s.z-z) < 10)) continue;
+    const depth = (-z - 30)/74;
+    const h = 9 + Math.random()*16 + depth*22;
+    const w = 3.4 + Math.random()*3.6;
+    tower(x, z, w, h, palette[Math.floor(Math.random()*palette.length)]);
+    towerSpots.push({x,z});
+  }
+})();
+
+/* ----- the Spire (signature tower, in front of the moon) ----- */
+const spire = new THREE.Group();
+{
+  const segs = 7;
+  for(let i=0;i<segs;i++){
+    const r = 5.2 * (1 - i/segs) + 0.7;
+    const sh = 9.5;
+    const m = new THREE.Mesh(
+      new THREE.CylinderGeometry(r*0.82, r, sh, 6),
+      new THREE.MeshLambertMaterial({
+        color:0x2c1f58,
+        emissive: i%2 ? 0xffc488 : 0x5fe3c8,
+        emissiveMap: windowTexture(3,3, 0.4),
+        emissiveIntensity:0.9
+      })
+    );
+    m.position.y = i*sh + sh/2;
+    m.rotation.y = i*0.32;
+    spire.add(m);
+  }
+  const needle = new THREE.Mesh(
+    new THREE.ConeGeometry(0.8, 16, 6),
+    new THREE.MeshBasicMaterial({color:0xffd9a0})
+  );
+  needle.position.y = segs*9.5 + 8;
+  spire.add(needle);
+  const tip = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 10),
+    new THREE.MeshBasicMaterial({color:0xff8e6e}));
+  tip.position.y = segs*9.5 + 16.5;
+  tip.userData.beacon = true;
+  spire.add(tip);
+  spire.position.set(4, -2, -98);
+  scene.add(spire);
+}
+
+/* ================= FLOATING ISLANDS ================= */
+const islands = [];
+function island(x, y, z, s){
+  const grp = new THREE.Group();
+  const rock = new THREE.Mesh(
+    new THREE.ConeGeometry(s, s*1.5, 6),
+    new THREE.MeshLambertMaterial({color:0x53356f})
+  );
+  rock.rotation.x = Math.PI;
+  rock.position.y = -s*0.75;
+  grp.add(rock);
+  const top = new THREE.Mesh(
+    new THREE.CylinderGeometry(s, s*0.96, s*0.28, 6),
+    new THREE.MeshLambertMaterial({color:0xd9a45f, emissive:0x8a5a2a, emissiveIntensity:0.25})
+  );
+  grp.add(top);
+  // tiny villa
+  const villa = new THREE.Mesh(
+    new THREE.BoxGeometry(s*0.45, s*0.5, s*0.45),
+    new THREE.MeshLambertMaterial({color:0x2c1f58, emissive:0xffd9a0, emissiveIntensity:0.7,
+      emissiveMap:windowTexture(1,1,0.5)})
+  );
+  villa.position.y = s*0.39;
+  grp.add(villa);
+  const dome = new THREE.Mesh(
+    new THREE.SphereGeometry(s*0.26, 10, 10, 0, Math.PI*2, 0, Math.PI/2),
+    new THREE.MeshLambertMaterial({color:0xecc784, emissive:0xecc784, emissiveIntensity:0.45})
+  );
+  dome.position.y = s*0.64;
+  grp.add(dome);
+  // tether of light
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.06, y+2, 5),
+    new THREE.MeshBasicMaterial({color:0x5fe3c8, transparent:true, opacity:0.35})
+  );
+  beam.position.y = -(y+2)/2 - s*0.4;
+  grp.add(beam);
+  grp.position.set(x, y, z);
+  grp.userData = {baseY:y, phase:Math.random()*Math.PI*2, spin:(Math.random()*0.4+0.1)*(Math.random()<0.5?-1:1)};
+  islands.push(grp);
+  scene.add(grp);
+}
+island(-26, 24, -8,  4.4);
+island( 22, 30, -22, 3.4);
+island(-10, 38, -34, 2.6);
+island( 34, 22,  6,  2.2);
+island(-38, 32, -40, 3.0);
+
+/* ================= FALCONS ================= */
+const falcons = [];
+function falcon(radius, height, speed, phase){
+  const grp = new THREE.Group();
+  const mat = new THREE.MeshBasicMaterial({color:0xf6ecdd, side:THREE.DoubleSide});
+  const body = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.4, 5), mat);
+  body.rotation.x = Math.PI/2;
+  grp.add(body);
+  const wingGeo = new THREE.PlaneGeometry(2.0, 0.55);
+  const wl = new THREE.Mesh(wingGeo, mat); wl.position.x = -1.0;
+  const wr = new THREE.Mesh(wingGeo, mat); wr.position.x =  1.0;
+  const pl = new THREE.Group(); pl.add(wl);
+  const pr = new THREE.Group(); pr.add(wr);
+  grp.add(pl, pr);
+  grp.userData = {radius, height, speed, phase, pl, pr};
+  falcons.push(grp);
+  scene.add(grp);
+}
+for(let i=0;i<7;i++){
+  falcon(18 + Math.random()*42, 16 + Math.random()*26, 0.12 + Math.random()*0.12, Math.random()*Math.PI*2);
+}
+
+/* ================= LANTERNS (rising) ================= */
+const lanterns = [];
+{
+  const geo = new THREE.SphereGeometry(0.32, 8, 8);
+  for(let i=0;i<34;i++){
+    const warm = Math.random() < 0.7;
+    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+      color: warm ? 0xffc488 : 0x7df0dc, transparent:true, opacity:0.9
+    }));
+    m.position.set((Math.random()*2-1)*90, Math.random()*48, -110 + Math.random()*150);
+    m.userData = {v:0.012 + Math.random()*0.03, sway:Math.random()*Math.PI*2};
+    lanterns.push(m);
+    scene.add(m);
+  }
+}
+
+/* ================= SAND HAZE PARTICLES ================= */
+let haze;
+{
+  const n = 600, pos = new Float32Array(n*3);
+  for(let i=0;i<n;i++){
+    pos[i*3]   = (Math.random()*2-1)*140;
+    pos[i*3+1] = Math.random()*26;
+    pos[i*3+2] = -120 + Math.random()*220;
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  haze = new THREE.Points(g, new THREE.PointsMaterial({
+    color:0xe0a368, size:0.55, transparent:true, opacity:0.45, depthWrite:false,
+    blending:THREE.AdditiveBlending
+  }));
+  scene.add(haze);
+}
+
+/* ================= CAMERA JOURNEY ================= */
+const KEYS = [
+  {pos:[  0, 21,  96], look:[  0, 22, -40]},  // 0 hero — wide, moon over city
+  {pos:[ -8,  4,  52], look:[ 14,  5, -10]},  // 1 sands — skimming dunes
+  {pos:[-30, 20,  18], look:[ -6, 30, -24]},  // 2 ascent — among islands
+  {pos:[ 16, 15, -16], look:[-10, 18, -64]},  // 3 skyline — weaving towers
+  {pos:[ 14, 40, -58], look:[  4, 52, -140]}, // 4 spire — summit + moon
+  {pos:[  0, 30,  62], look:[  0, 24, -60]},  // 5 arrive — pull back
+];
+const v3 = (a)=>new THREE.Vector3(a[0],a[1],a[2]);
+const curPos = v3(KEYS[0].pos), curLook = v3(KEYS[0].look);
+const tgtPos = curPos.clone(), tgtLook = curLook.clone();
+
+const ease = t => t<0.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+
+let scrollP = 0, smoothP = 0;
+function readScroll(){
+  const max = document.documentElement.scrollHeight - innerHeight;
+  scrollP = max > 0 ? Math.min(1, Math.max(0, scrollY / max)) : 0;
+}
+addEventListener('scroll', readScroll, {passive:true});
+readScroll();
+
+function sampleJourney(p){
+  const segs = KEYS.length - 1;
+  const f = Math.min(p * segs, segs - 1e-5);
+  const i = Math.floor(f);
+  const t = ease(f - i);
+  tgtPos.copy(v3(KEYS[i].pos)).lerp(v3(KEYS[i+1].pos), t);
+  tgtLook.copy(v3(KEYS[i].look)).lerp(v3(KEYS[i+1].look), t);
+}
+
+/* mouse drift */
+let mx = 0, my = 0;
+addEventListener('pointermove', e=>{
+  mx = (e.clientX/innerWidth - 0.5);
+  my = (e.clientY/innerHeight - 0.5);
+}, {passive:true});
+
+/* ================= OVERLAY FADES / UI ================= */
+const chapters = [...document.querySelectorAll('.chapter')].map(el=>{
+  const [a,b] = el.dataset.range.split(',').map(Number);
+  return {el, a, b};
+});
+const compass = document.getElementById('compass');
+chapters.forEach((c,i)=>{
+  const d = document.createElement('button');
+  d.className = 'dot';
+  d.setAttribute('aria-label', 'Go to chapter ' + (i+1));
+  d.addEventListener('click', ()=>jumpTo(i));
+  compass.appendChild(d);
+});
+const dots = [...compass.children];
+const hint = document.getElementById('hint');
+
+function jumpTo(i){
+  const c = chapters[i];
+  const mid = (c.a + c.b)/2;
+  const max = document.documentElement.scrollHeight - innerHeight;
+  scrollTo({top: mid*max, behavior: REDUCED ? 'auto' : 'smooth'});
+}
+document.querySelectorAll('[data-jump]').forEach(a=>{
+  a.addEventListener('click', e=>{e.preventDefault(); jumpTo(+a.dataset.jump);});
+});
+document.querySelectorAll('.cta').forEach((b,i)=>{
+  b.addEventListener('click', ()=> i===0 ? alert('You are caravan member #0001 — welcome to Miraj.') : jumpTo(0));
+});
+
+function updateOverlays(p){
+  let active = 0;
+  chapters.forEach((c,i)=>{
+    const span = c.b - c.a, fade = Math.min(0.04, span*0.3);
+    let o = 0;
+    if(p >= c.a && p <= c.b){
+      const fin  = c.a <= 0 ? 1 : (p - c.a)/fade;
+      const fout = c.b >= 1 ? 1 : (c.b - p)/fade;
+      o = Math.min(fin, fout, 1);
+      active = i;
+    }
+    o = Math.max(0, Math.min(1, o));
+    c.el.style.opacity = o;
+    c.el.classList.toggle('live', o > 0.01);
+    if(o > 0.5) active = i;
+  });
+  dots.forEach((d,i)=> d.classList.toggle('on', i === active));
+  hint.style.opacity = p < 0.04 ? 0.6 : 0;
+}
+
+/* ================= RESIZE ================= */
+addEventListener('resize', ()=>{
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ================= LOOP ================= */
+const clock = new THREE.Clock();
+const beacons = [];
+scene.traverse(o=>{ if(o.userData && o.userData.beacon) beacons.push(o); });
+
+function tick(){
+  requestAnimationFrame(tick);
+  const t = clock.getElapsedTime();
+  const amp = REDUCED ? 0.25 : 1;
+
+  // scroll smoothing
+  smoothP += (scrollP - smoothP) * 0.06;
+  sampleJourney(smoothP);
+  curPos.lerp(tgtPos, 0.08);
+  curLook.lerp(tgtLook, 0.08);
+
+  camera.position.set(
+    curPos.x + Math.sin(t*0.4)*0.6*amp + mx*2.4,
+    curPos.y + Math.sin(t*0.55)*0.4*amp - my*1.6,
+    curPos.z
+  );
+  camera.lookAt(curLook);
+
+  // moon breathing
+  moonCore.scale.setScalar(1 + Math.sin(t*0.6)*0.012*amp);
+
+  // islands bob + spin
+  for(const g of islands){
+    g.position.y = g.userData.baseY + Math.sin(t*0.5 + g.userData.phase)*1.4*amp;
+    g.rotation.y += g.userData.spin*0.0015*amp;
+  }
+
+  // falcons
+  for(const f of falcons){
+    const u = f.userData;
+    const a = t*u.speed + u.phase;
+    f.position.set(Math.cos(a)*u.radius, u.height + Math.sin(t*0.8+u.phase)*1.6*amp, -30 + Math.sin(a)*u.radius);
+    f.lookAt(Math.cos(a+0.1)*u.radius, f.position.y, -30 + Math.sin(a+0.1)*u.radius);
+    const flap = Math.sin(t*7 + u.phase)*0.65*amp;
+    u.pl.rotation.z =  flap;
+    u.pr.rotation.z = -flap;
+  }
+
+  // lanterns rise
+  for(const l of lanterns){
+    l.position.y += l.userData.v*amp;
+    l.position.x += Math.sin(t*0.7 + l.userData.sway)*0.008*amp;
+    if(l.position.y > 60) l.position.y = -1;
+  }
+
+  // beacons pulse
+  const pulse = 0.5 + 0.5*Math.sin(t*2.4);
+  for(const b of beacons) b.scale.setScalar(0.8 + pulse*0.5);
+
+  // haze drift
+  haze.rotation.y = Math.sin(t*0.05)*0.04;
+
+  updateOverlays(smoothP);
+  renderer.render(scene, camera);
+}
+tick();
+
+/* ================= GATE ================= */
+setTimeout(()=>document.getElementById('gate').classList.add('open'), 1400);
+})();
+</script>
+</body>
+</html>
